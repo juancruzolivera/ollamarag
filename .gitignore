@@ -25,7 +25,7 @@ secrets.json
 chroma_db/
 
 # ---- Documentos y datos del usuario ----
-mis_documentos/
+#mis_documentos/
 
 # ---- Logs ----
 *.log
