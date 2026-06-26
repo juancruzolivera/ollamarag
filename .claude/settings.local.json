@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path D:\\\\ollamaRAG -Force | Where-Object { $_.Name -ne 'venv' } | Select-Object Name, Length, Mode; echo \"---mis_documentos---\"; Get-ChildItem -Path D:\\\\ollamaRAG\\\\mis_documentos -Force -ErrorAction SilentlyContinue | Select-Object Name, Length)",
+      "PowerShell(venv\\\\Scripts\\\\python.exe -m py_compile api.py; if \\($?\\) { \"OK: sintaxis valida\" })"
+    ]
+  }
+}

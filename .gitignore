@@ -1,0 +1,52 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- Entornos virtuales ----
+venv/
+.venv/
+env/
+ENV/
+
+# ---- Variables de entorno / secretos ----
+.env
+.env.*
+*.key
+secrets.json
+
+# ---- Base de datos vectorial (ChromaDB) ----
+chroma_db/
+
+# ---- Documentos y datos del usuario ----
+mis_documentos/
+
+# ---- Logs ----
+*.log
+logs.txt
+
+# ---- IDE / Editores ----
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---- Sistema operativo ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- Caché / temporales ----
+.cache/
+*.tmp
+*.bak
