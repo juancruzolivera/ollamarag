@@ -2,7 +2,27 @@
   "permissions": {
     "allow": [
       "PowerShell(Get-ChildItem -Path D:\\\\ollamaRAG -Force | Where-Object { $_.Name -ne 'venv' } | Select-Object Name, Length, Mode; echo \"---mis_documentos---\"; Get-ChildItem -Path D:\\\\ollamaRAG\\\\mis_documentos -Force -ErrorAction SilentlyContinue | Select-Object Name, Length)",
-      "PowerShell(venv\\\\Scripts\\\\python.exe -m py_compile api.py; if \\($?\\) { \"OK: sintaxis valida\" })"
+      "PowerShell(venv\\\\Scripts\\\\python.exe -m py_compile api.py; if \\($?\\) { \"OK: sintaxis valida\" })",
+      "Bash(./venv/Scripts/python.exe -m pip freeze)",
+      "Bash(./venv/Scripts/python.exe -m py_compile odoo_sync.py)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=d:/ollamaRAG/DOCUMENTACION.pdf file:///C:/Users/LLM/AppData/Local/Temp/claude/d--ollamaRAG/b7542fac-fb2f-4448-91da-91d30b59546e/scratchpad/doc_print.html)",
+      "Bash(./venv/Scripts/python.exe -c \"from pypdf import PdfReader; r=PdfReader\\(r'd:/ollamaRAG/DOCUMENTACION.pdf'\\); print\\('Paginas:', len\\(r.pages\\)\\); print\\('Texto pag.1 \\(primeros 120 chars\\):', repr\\(r.pages[0].extract_text\\(\\)[:120]\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from pypdf import PdfReader; r=PdfReader\\(r'd:/ollamaRAG/DOCUMENTACION.pdf'\\); print\\('Paginas:', len\\(r.pages\\)\\); print\\('Portada:', repr\\(r.pages[0].extract_text\\(\\)[:60]\\)\\)\")",
+      "Bash(echo \"=== En el proyecto ===\"; ls -t d:/ollamaRAG/*.png d:/ollamaRAG/*.jpg d:/ollamaRAG/*.jpeg d:/ollamaRAG/*.webp 2>/dev/null *)",
+      "Read(//c/Users/LLM/Downloads/**)",
+      "Read(//c/Users/LLM/Desktop/**)",
+      "Bash(cat)",
+      "Bash(./venv/Scripts/python.exe /tmp/swap_logo.py)",
+      "Bash(./venv/Scripts/python.exe -c \"from pypdf import PdfReader; r=PdfReader\\(r'd:/ollamaRAG/DOCUMENTACION.pdf'\\); print\\('Paginas:', len\\(r.pages\\), '| imagenes en portada:', len\\(r.pages[0].images\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from llama_index.core.schema import TextNode; n=TextNode\\(text='x', metadata={'a':1}\\); print\\('TextNode OK'\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from llama_index.core import VectorStoreIndex; print\\('insert_nodes existe:', hasattr\\(VectorStoreIndex, 'insert_nodes'\\)\\)\")",
+      "Bash(ollama list *)",
+      "Bash(curl -s http://localhost:11434/api/generate -d '{\"model\":\"gemma4:e2b\",\"prompt\":\"Decime hola en una palabra.\",\"stream\":false}')",
+      "Bash(./venv/Scripts/python.exe -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('RESPUESTA:', repr\\(d.get\\('response',''\\)[:200]\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe -m py_compile api.py)",
+      "Bash(./venv/Scripts/python.exe -c \"from llama_index.core.memory import ChatMemoryBuffer; print\\('ChatMemoryBuffer OK'\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from llama_index.core import VectorStoreIndex; print\\('as_chat_engine existe:', hasattr\\(VectorStoreIndex, 'as_chat_engine'\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe /tmp/chat_memoria.py)"
     ]
   }
 }

@@ -25,6 +25,8 @@ contexto.py (indexación incremental) y después reiniciá esta API.
 
 import logging
 import os
+import threading
+import uuid
 
 import chromadb
 from fastapi import FastAPI
@@ -32,6 +34,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
@@ -49,7 +52,10 @@ log = logging.getLogger("rag-api")
 # ----------------------------------------------------------------------------
 # Configuración de modelos Ollama
 # ----------------------------------------------------------------------------
-Settings.llm = Ollama(model=MODELO_LLM, request_timeout=300)
+# context_window (=> num_ctx en Ollama) tiene que ser amplio: al chatear, el
+# prompt lleva el contexto recuperado + el HISTORIAL de la conversación. Si se
+# queda corto, el modelo trunca y puede devolver tokens basura.
+Settings.llm = Ollama(model=MODELO_LLM, request_timeout=300, context_window=8192)
 Settings.embed_model = OllamaEmbedding(model_name=MODELO_EMBED)
 
 # ----------------------------------------------------------------------------
@@ -62,11 +68,36 @@ index = VectorStoreIndex.from_vector_store(vector_store)
 log.info("RAG listo. LLM=%s  Embeddings=%s  Vectores=%d",
          MODELO_LLM, MODELO_EMBED, collection.count())
 
-app = FastAPI(title="ollamaRAG API", version="1.0")
+app = FastAPI(title="Guanaco Advisor API", version="2.0")
+
+# ----------------------------------------------------------------------------
+# Memoria de conversación por sesión
+# ----------------------------------------------------------------------------
+# Cada sesión (identificada por session_id) tiene su propio historial de chat,
+# guardado en memoria del servidor. Es liviano y suficiente para uso interno.
+# NOTA: al reiniciar la API estas conversaciones se pierden (no se persisten).
+TOKENS_HISTORIAL = 3000          # cuánto historial recordar (en tokens)
+_sesiones = {}                   # session_id -> ChatMemoryBuffer
+_lock = threading.Lock()
+
+
+def get_memoria(session_id: str) -> ChatMemoryBuffer:
+    """Devuelve (creándola si hace falta) la memoria de esa sesión."""
+    with _lock:
+        mem = _sesiones.get(session_id)
+        if mem is None:
+            mem = ChatMemoryBuffer.from_defaults(token_limit=TOKENS_HISTORIAL)
+            _sesiones[session_id] = mem
+        return mem
 
 
 class Consulta(BaseModel):
     pregunta: str
+    session_id: str | None = None   # si no llega, se crea una sesión nueva
+
+
+class Reinicio(BaseModel):
+    session_id: str
 
 
 @app.get("/")
@@ -88,10 +119,25 @@ def salud():
 
 @app.post("/preguntar")
 def preguntar(c: Consulta):
-    """RAG: busca contexto en Chroma y deja que Ollama redacte la respuesta."""
-    log.info("Pregunta (top_k=%d): %s", TOP_K, c.pregunta)
-    qe = index.as_query_engine(similarity_top_k=TOP_K)
-    resp = qe.query(c.pregunta)
+    """RAG con memoria: usa el historial de la sesión + contexto de Chroma."""
+    session_id = c.session_id or uuid.uuid4().hex
+    memoria = get_memoria(session_id)
+    log.info("Pregunta (sesion=%s, top_k=%d): %s",
+             session_id[:8], TOP_K, c.pregunta)
+
+    # Chat engine: condensa la pregunta con el historial, recupera contexto y
+    # responde teniendo en cuenta lo que se habló antes en esta sesión.
+    chat_engine = index.as_chat_engine(
+        chat_mode="condense_plus_context",
+        memory=memoria,
+        similarity_top_k=TOP_K,
+        system_prompt=(
+            "Sos un asistente que responde en español de forma clara y concisa, "
+            "basándote en el contexto disponible y en la conversación previa. "
+            "Si no tenés información suficiente, decilo."
+        ),
+    )
+    resp = chat_engine.chat(c.pregunta)
 
     # Qué trozos/documentos usó para responder (trazabilidad)
     fuentes = []
@@ -101,7 +147,16 @@ def preguntar(c: Consulta):
             "score": round(n.score, 4) if n.score is not None else None,
         })
 
-    return {"respuesta": str(resp), "fuentes": fuentes}
+    return {"respuesta": str(resp), "fuentes": fuentes, "session_id": session_id}
+
+
+@app.post("/reiniciar")
+def reiniciar(r: Reinicio):
+    """Olvida el historial de una sesión (arranca una conversación nueva)."""
+    with _lock:
+        _sesiones.pop(r.session_id, None)
+    log.info("Sesión reiniciada: %s", r.session_id[:8])
+    return {"estado": "ok", "session_id": r.session_id}
 
 
 if __name__ == "__main__":
